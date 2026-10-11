@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Ledger</title>
+<meta name="description" content="Track what you spend each day, week and month, in lei.">
+<meta name="theme-color" content="#EBF0EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1411" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+
+/* Layout: one phone-width column. Period tabs, a summary slip (total, cash/card split, daily bars),
+   category breakdown, then a receipt-style list grouped by day. A fixed "Add expense" bar sits at the bottom. */
+:root {
+  --bg: #EBF0EC;
+  --surface: #FFFFFF;
+  --ink: #13201A;
+  --muted: #5A6A61;
+  --line: #D2DBD5;
+  --track: #E2E8E4;
+  --card: #2442C8;
+  --cash: #2B7A4B;
+  --danger: #B3261E;
+  --warn: #A86200;
+  --on-accent: #FFFFFF;
+  --shadow: 0 1px 2px rgba(19, 32, 26, .06), 0 8px 24px rgba(19, 32, 26, .06);
+  --f-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1411; --surface: #17201C; --ink: #E6EEE9; --muted: #93A39A; --line: #29342F;
+    --track: #212B27; --card: #7C93FF; --cash: #5BBE87; --danger: #FF8A80; --warn: #FFB547; --on-accent: #0E1411;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1411; --surface: #17201C; --ink: #E6EEE9; --muted: #93A39A; --line: #29342F;
+  --track: #212B27; --card: #7C93FF; --cash: #5BBE87; --danger: #FF8A80; --warn: #FFB547; --on-accent: #0E1411;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-inline: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+body.locked { overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, .chip:focus-visible {
+  outline: 2px solid var(--card); outline-offset: 2px;
+}
+.app {
+  max-width: 520px; margin: 0 auto;
+  padding-block: 8px 120px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* Header */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg);
+  padding-block: 10px 6px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand h1 {
+  margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 24px;
+  letter-spacing: -.01em;
+}
+.sync { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.sync[data-mode="sync"]::before { background: var(--cash); }
+.tabs {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--track); border-radius: 12px; padding: 3px; gap: 3px;
+}
+.tabs button {
+  border: 0; background: transparent; border-radius: 9px; padding: 8px 0;
+  font-weight: 600; font-size: 14px; color: var(--muted);
+}
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+/* Summary slip */
+.summary {
+  background: var(--surface); border-radius: 18px; box-shadow: var(--shadow);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.nav button {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line);
+  background: transparent; font-size: 20px; line-height: 1; display: grid; place-items: center;
+}
+.nav button:disabled { opacity: .35; cursor: default; }
+.nav .pl { text-align: center; min-width: 0; }
+.nav .pl strong { display: block; font-weight: 600; font-size: 15px; }
+.nav .pl span { display: block; font-size: 12px; color: var(--muted); }
+.total {
+  display: flex; align-items: baseline; gap: 8px; justify-content: center;
+  font-family: var(--f-display); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.total #total { font-size: clamp(38px, 11vw, 52px); letter-spacing: -.02em; line-height: 1.05; }
+.total .unit { font-size: 18px; color: var(--muted); font-weight: 600; }
+.split { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--track); }
+.split span { height: 100%; transition: width .3s ease; }
+.split .s-card { background: var(--card); }
+.split .s-cash { background: var(--cash); }
+.legend { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+.legend div { display: flex; align-items: center; gap: 6px; }
+.legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+.legend b { font-family: var(--f-num); font-weight: 500; font-variant-numeric: tabular-nums; }
+.dot-card { background: var(--card); }
+.dot-cash { background: var(--cash); }
+
+/* Budget */
+.budget { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 7px; --b: var(--ink); }
+.budget[data-state="warn"] { --b: var(--warn); }
+.budget[data-state="over"] { --b: var(--danger); }
+.b-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.b-top span { font-size: 13px; font-weight: 600; }
+.link { border: 0; background: transparent; color: var(--card); font-weight: 600; font-size: 13px; padding: 4px 0; }
+.b-meter { height: 10px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.b-meter span { display: block; height: 100%; background: var(--b); border-radius: 99px; transition: width .3s ease; }
+.b-text { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.b-text strong { color: var(--b); font-weight: 700; }
+.b-text .daily { display: block; }
+.budget[data-state="warn"] .b-top span::after { content: " · nearly used up"; color: var(--warn); }
+.budget[data-state="over"] .b-top span::after { content: " · over budget"; color: var(--danger); }
+
+/* Export */
+.export-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.outline {
+  border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px;
+  font-weight: 600; font-size: 14px;
+}
+.hint { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
+.panel .hint { margin: -4px 0 0; font-size: 14px; }
+
+.chart { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.chart-cap { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.chart-cap b { font-family: var(--f-num); font-weight: 500; color: var(--ink); }
+.bars, .ticks { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--gap, 4px); }
+.bars { height: 84px; align-items: stretch; }
+.bar {
+  display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden;
+  background: var(--track);
+}
+.bar span { display: block; width: 100%; }
+.bar .b-cash { background: var(--cash); }
+.bar .b-card { background: var(--card); }
+.ticks span { font-size: 11px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; }
+.ticks span.today { color: var(--ink); font-weight: 700; }
+
+/* Categories */
+.section-h {
+  margin: 0 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted);
+}
+.cats { display: flex; flex-direction: column; }
+.cat-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+  padding-block: 7px;
+}
+.cat-row .name { font-weight: 500; }
+.cat-row .amt { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 14px; }
+.cat-row .meter { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.cat-row .meter span { display: block; height: 100%; background: var(--ink); opacity: .7; border-radius: 99px; }
+
+/* Receipt list */
+.list { display: flex; flex-direction: column; gap: 18px; }
+.day { display: flex; flex-direction: column; }
+.day-h {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.day-h strong { font-weight: 600; }
+.day-h span { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
+  width: 100%; text-align: left; background: transparent; border: 0;
+  border-bottom: 1px dashed var(--line); padding: 11px 2px;
+}
+.row:active { background: var(--track); }
+.r-main { min-width: 0; display: flex; flex-direction: column; }
+.r-item { font-weight: 500; overflow-wrap: anywhere; }
+.r-sub { font-size: 12.5px; color: var(--muted); }
+.pay {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  padding: 3px 7px; border-radius: 6px; border: 1.5px solid currentColor;
+}
+.pay.card { color: var(--card); }
+.pay.cash { color: var(--cash); }
+.r-amt { font-family: var(--f-num); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+
+.empty {
+  text-align: center; color: var(--muted); padding: 28px 16px;
+  border: 1.5px dashed var(--line); border-radius: 16px;
+}
+.empty strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+/* Bottom bar */
+.addbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 65%, transparent);
+  display: flex; justify-content: center;
+}
+.primary {
+  width: 100%; max-width: 520px; border: 0; border-radius: 14px; padding: 15px 18px;
+  background: var(--card); color: var(--on-accent); font-weight: 700; font-size: 16px;
+  box-shadow: var(--shadow);
+}
+.primary:active { transform: translateY(1px); }
+
+/* Sheet */
+.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.scrim { position: absolute; inset: 0; background: rgba(8, 14, 11, .45); }
+.panel {
+  position: relative; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto;
+  background: var(--surface); border-radius: 22px 22px 0 0;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+  animation: up .22s ease-out;
+}
+@keyframes up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel-head h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 700; }
+.ghost { border: 0; background: transparent; color: var(--muted); font-weight: 600; padding: 8px 4px; }
+.amt-wrap {
+  display: flex; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--line); padding-bottom: 4px;
+}
+.amt-wrap:focus-within { border-bottom-color: var(--card); }
+.amt-wrap input {
+  flex: 1; min-width: 0; border: 0; background: transparent; outline: none; color: var(--ink);
+  font-family: var(--f-display); font-weight: 700; font-size: 44px; font-variant-numeric: tabular-nums; padding: 0;
+}
+.amt-wrap span { font-size: 18px; font-weight: 600; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > span, fieldset legend { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field input {
+  font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px; width: 100%; min-width: 0;
+}
+fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+fieldset legend { padding: 0; margin-bottom: 8px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg legend { grid-column: 1 / -1; }
+.seg button {
+  border: 1.5px solid var(--line); background: transparent; border-radius: 12px; padding: 12px;
+  font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.seg button[aria-pressed="true"][data-m="card"] { border-color: var(--card); color: var(--card); background: color-mix(in srgb, var(--card) 10%, transparent); }
+.seg button[aria-pressed="true"][data-m="cash"] { border-color: var(--cash); color: var(--cash); background: color-mix(in srgb, var(--cash) 12%, transparent); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 7px 12px;
+  font-size: 14px; font-weight: 500;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.err { margin: -6px 0 0; color: var(--danger); font-size: 13px; }
+.actions { display: flex; gap: 10px; }
+.actions .primary { flex: 1; }
+.danger {
+  border: 1.5px solid var(--danger); color: var(--danger); background: transparent;
+  border-radius: 14px; padding: 13px 16px; font-weight: 700;
+}
+.danger.armed { background: var(--danger); color: var(--surface); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 12px;
+  font-size: 14px; font-weight: 500; max-width: calc(100vw - 32px); text-align: center;
+  transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* Standalone app shell */
+html { color-scheme: light; -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; min-height: 100vh; overscroll-behavior-y: none; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+.backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.backup-btns .wide { grid-column: 1 / -1; }
+.install {
+  background: var(--surface); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 6px; font-size: 14px;
+}
+.install strong { font-family: var(--f-display); font-size: 16px; }
+.install ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px; }
+.install .link { align-self: flex-start; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>Pocket Ledger</h1>
+      <span id="syncNote" class="sync" data-mode="local">Saved on this phone</span>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Time period">
+      <button type="button" role="tab" id="tab-day" data-p="day">Day</button>
+      <button type="button" role="tab" id="tab-week" data-p="week">Week</button>
+      <button type="button" role="tab" id="tab-month" data-p="month">Month</button>
+    </div>
+  </header>
+
+  <div class="install" id="install" hidden>
+    <strong>Put Pocket Ledger on your home screen</strong>
+    <ol>
+      <li>Tap the Share button (in newer iOS, tap <b>•••</b> first, then <b>Share</b>).</li>
+      <li>Scroll down or tap <b>View More</b>, then choose <b>Add to Home Screen</b>.</li>
+      <li>Open it from the new icon. Your expenses are kept inside that app.</li>
+    </ol>
+    <button type="button" class="link" id="installHide">Hide this</button>
+  </div>
+
+  <section class="summary" aria-label="Summary">
+    <div class="nav">
+      <button type="button" id="prev" aria-label="Previous period">‹</button>
+      <div class="pl"><strong id="plabel">Today</strong><span id="psub"></span></div>
+      <button type="button" id="next" aria-label="Next period">›</button>
+    </div>
+    <div class="total"><span id="total">0,00</span><span class="unit">lei</span></div>
+    <div class="split" aria-hidden="true"><span class="s-card" id="sCard" style="width:0"></span><span class="s-cash" id="sCash" style="width:0"></span></div>
+    <div class="legend">
+      <div><i class="dot-card"></i>Card <b id="cardAmt">0,00</b></div>
+      <div><i class="dot-cash"></i>Cash <b id="cashAmt">0,00</b></div>
+    </div>
+    <div class="budget" id="budget" data-state="none">
+      <div class="b-top"><span id="bLabel">Monthly budget</span><button type="button" class="link" id="bEdit">Set budget</button></div>
+      <div class="b-meter" id="bMeterWrap" hidden><span id="bMeter" style="width:0"></span></div>
+      <div class="b-text" id="bText">Set a monthly limit to see how much you have left.</div>
+    </div>
+    <div class="chart" id="chart" hidden></div>
+  </section>
+
+  <section id="catsWrap" hidden>
+    <h2 class="section-h">By category</h2>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <section>
+    <h2 class="section-h" id="listH">Purchases</h2>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section>
+    <h2 class="section-h">Back up and export</h2>
+    <div class="backup-btns">
+      <button type="button" class="outline" id="expPeriod">Export this period</button>
+      <button type="button" class="outline" id="expAll">Export everything</button>
+      <button type="button" class="outline wide" id="impBtn">Import from a file</button>
+    </div>
+    <input type="file" id="impFile" accept=".csv,text/csv,text/plain" hidden>
+    <p class="hint">Exports a CSV file that opens in Numbers, Excel or Google Sheets. Your expenses live only on this phone, so export everything now and then as a backup. Import adds expenses from a Pocket Ledger CSV and skips ones you already have.</p>
+  </section>
+</div>
+
+<div class="addbar"><button type="button" class="primary" id="addBtn">+ Add expense</button></div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="scrim" id="scrim"></div>
+  <form class="panel" id="form" novalidate role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <div class="panel-head">
+      <h2 id="formTitle">New expense</h2>
+      <button type="button" class="ghost" id="closeBtn">Cancel</button>
+    </div>
+    <label class="amt-wrap" for="amt">
+      <input id="amt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Amount in lei">
+      <span>lei</span>
+    </label>
+    <p class="err" id="amtErr" hidden>Enter how much it cost, for example 12,50.</p>
+    <label class="field" for="item">
+      <span>What did you buy?</span>
+      <input id="item" list="pastItems" autocomplete="off" maxlength="80" placeholder="e.g. Coffee and a croissant">
+    </label>
+    <p class="err" id="itemErr" hidden>Write what you bought so you can recognise it later.</p>
+    <datalist id="pastItems"></datalist>
+    <fieldset class="seg">
+      <legend>Paid with</legend>
+      <button type="button" id="mCard" data-m="card" aria-pressed="true">Card</button>
+      <button type="button" id="mCash" data-m="cash" aria-pressed="false">Cash</button>
+    </fieldset>
+    <fieldset>
+      <legend>Category (optional)</legend>
+      <div class="chips" id="chips"></div>
+    </fieldset>
+    <label class="field" for="when">
+      <span>When</span>
+      <input id="when" type="datetime-local">
+    </label>
+    <div class="actions">
+      <button type="button" class="danger" id="delBtn" hidden>Delete</button>
+      <button type="submit" class="primary" id="saveBtn">Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="bSheet" hidden>
+  <div class="scrim" id="bScrim"></div>
+  <form class="panel" id="bForm" novalidate role="dialog" aria-modal="true" aria-labelledby="bTitle">
+    <div class="panel-head">
+      <h2 id="bTitle">Monthly budget</h2>
+      <button type="button" class="ghost" id="bClose">Cancel</button>
+    </div>
+    <p class="hint">The most you want to spend each month. You'll get a warning when you reach 80% and when you go over.</p>
+    <label class="amt-wrap" for="bAmt">
+      <input id="bAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Monthly budget in lei">
+      <span>lei</span>
+    </label>
+    <p class="err" id="bErr" hidden>Enter a budget amount, for example 2000.</p>
+    <div class="actions">
+      <button type="button" class="danger" id="bRemove" hidden>Remove</button>
+      <button type="submit" class="primary">Save budget</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
