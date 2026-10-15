@@ -1,6 +1,6 @@
 // Keeps Pocket Ledger working offline. Bump VERSION whenever you change the app files.
-const VERSION = 'pocket-ledger-v3';
-const SHELL = ['./', 'index.html', 'app.js', 'manifest.webmanifest',
+const VERSION = 'pocket-ledger-v4';
+const SHELL = ['./', 'index.html', 'app.js?v=4', 'manifest.webmanifest',
   'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -23,7 +23,8 @@ self.addEventListener('fetch', event => {
   // App files: use the network when online so updates arrive, fall back to the saved copy offline.
   if (url.origin === self.location.origin) {
     event.respondWith(
-      fetch(req)
+      // Always check with the server so a new upload is picked up straight away.
+      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
         .then(res => {
           if (res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
           return res;

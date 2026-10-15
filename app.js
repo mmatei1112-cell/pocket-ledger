@@ -120,6 +120,15 @@
     return base;
   }
 
+  // If the phone mixed an old page with this newer script, reload once to get matching files.
+  const APP_VERSION = '4';
+  const pageVersion = (document.querySelector('meta[name="app-version"]') || {}).content;
+  if (pageVersion !== APP_VERSION) {
+    let tried = false;
+    try { tried = sessionStorage.getItem('pl-reload') === APP_VERSION; sessionStorage.setItem('pl-reload', APP_VERSION); } catch (e) { tried = true; }
+    if (!tried) { location.reload(); return; }
+  }
+
   let D = load();
 
   function persist() {
@@ -756,7 +765,7 @@
     document.querySelectorAll('.tab[data-tab]').forEach(b => {
       if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
-    window.scrollTo(0, 0);
+    $('scroller').scrollTop = 0;
     render();
   }
   function render() {
@@ -1570,6 +1579,20 @@
     render();
     toast('Apple Pay auto-log is off. Payments already logged stay.');
   });
+
+  // iOS can leave the page shifted after the keyboard closes, which puts buttons out of reach. Put it back.
+  const isField = el => !!el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName);
+  function resetShift() {
+    if (isField(document.activeElement)) return;
+    if (window.scrollY || window.scrollX || document.documentElement.scrollTop || document.body.scrollTop) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }
+  document.addEventListener('focusout', () => setTimeout(resetShift, 80));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', () => setTimeout(resetShift, 80));
+  window.addEventListener('scroll', () => { if (!isField(document.activeElement)) resetShift(); }, { passive: true });
 
   let lastDay = new Date().toDateString();
   document.addEventListener('visibilitychange', () => {
