@@ -1,5 +1,5 @@
 // Keeps Pocket Ledger working offline. Bump VERSION whenever you change the app files.
-const VERSION = 'pocket-ledger-v1';
+const VERSION = 'pocket-ledger-v3';
 const SHELL = ['./', 'index.html', 'app.js', 'manifest.webmanifest',
   'icons/apple-touch-icon.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 

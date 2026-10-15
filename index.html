@@ -4,9 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pocket Ledger</title>
-<meta name="description" content="Track what you spend each day, week and month, in lei.">
-<meta name="theme-color" content="#EBF0EC" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1411" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Track what you spend each day, week and month.">
+<meta name="theme-color" id="themeColor" content="#F2F3F9">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ledger">
@@ -16,431 +15,687 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap">
+<script>try{var s=(JSON.parse(localStorage.getItem('pocketLedger.v2')||'{}').settings)||{};if(s.theme==='dark'||s.theme==='light')document.documentElement.setAttribute('data-theme',s.theme);}catch(e){}</script>
 <style>
-
-/* Layout: one phone-width column. Period tabs, a summary slip (total, cash/card split, daily bars),
-   category breakdown, then a receipt-style list grouped by day. A fixed "Add expense" bar sits at the bottom. */
+/* Layout: phone app shell. Greeting header, a navy "spent" card, white cards below,
+   a frosted bottom tab bar with a sunny + button in the middle, and bottom sheets for forms. */
 :root {
-  --bg: #EBF0EC;
+  --bg: #F2F3F9;
   --surface: #FFFFFF;
-  --ink: #13201A;
-  --muted: #5A6A61;
-  --line: #D2DBD5;
-  --track: #E2E8E4;
-  --card: #2442C8;
-  --cash: #2B7A4B;
-  --danger: #B3261E;
-  --warn: #A86200;
-  --on-accent: #FFFFFF;
-  --shadow: 0 1px 2px rgba(19, 32, 26, .06), 0 8px 24px rgba(19, 32, 26, .06);
-  --f-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
-  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ink: #1D2042;
+  --muted: #666A8C;
+  --line: #E3E5F0;
+  --track: #ECEEF6;
+  --hero: #262A5C;
+  --on-hero: #FFFFFF;
+  --hero-muted: #BAC0EA;
+  --hero-track: rgba(255, 255, 255, .14);
+  --hero-card: #9DB0FF;
+  --hero-cash: #6BE3A8;
+  --sun: #FFC83D;
+  --on-sun: #1D2042;
+  --card: #3D5CE0;
+  --cash: #178A57;
+  --in: #178A57;
+  --ok: #178A57;
+  --warn: #B26A00;
+  --danger: #D33A3A;
+  --on-danger: #FFFFFF;
+  --toast-act: #FFC83D;
+  --scrim: rgba(12, 14, 34, .45);
+  --shadow: 0 1px 2px rgba(29, 32, 66, .05), 0 6px 20px rgba(29, 32, 66, .07);
+  --f-display: "Fredoka", "Nunito", system-ui, -apple-system, sans-serif;
+  --f-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-lg: 22px;
+  --r-md: 18px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0E1411; --surface: #17201C; --ink: #E6EEE9; --muted: #93A39A; --line: #29342F;
-    --track: #212B27; --card: #7C93FF; --cash: #5BBE87; --danger: #FF8A80; --warn: #FFB547; --on-accent: #0E1411;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    --bg: #11132A; --surface: #1B1E3B; --ink: #EDEEFA; --muted: #9DA0C6; --line: #2C3057; --track: #252949;
+    --hero: #2C3172; --on-hero: #FFFFFF; --hero-muted: #C3C7F2; --hero-track: rgba(255,255,255,.14);
+    --hero-card: #A9B8FF; --hero-cash: #7BE8B4; --sun: #FFC83D; --on-sun: #1D2042;
+    --card: #8197FF; --cash: #45C98C; --in: #45C98C; --ok: #45C98C; --warn: #FFB547; --danger: #FF7B7B; --on-danger: #2A0D0D;
+    --toast-act: #3D46B8; --scrim: rgba(0,0,0,.55);
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.22);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0E1411; --surface: #17201C; --ink: #E6EEE9; --muted: #93A39A; --line: #29342F;
-  --track: #212B27; --card: #7C93FF; --cash: #5BBE87; --danger: #FF8A80; --warn: #FFB547; --on-accent: #0E1411;
-  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  --bg: #11132A; --surface: #1B1E3B; --ink: #EDEEFA; --muted: #9DA0C6; --line: #2C3057; --track: #252949;
+  --hero: #2C3172; --on-hero: #FFFFFF; --hero-muted: #C3C7F2; --hero-track: rgba(255,255,255,.14);
+  --hero-card: #A9B8FF; --hero-cash: #7BE8B4; --sun: #FFC83D; --on-sun: #1D2042;
+  --card: #8197FF; --cash: #45C98C; --in: #45C98C; --ok: #45C98C; --warn: #FFB547; --danger: #FF7B7B; --on-danger: #2A0D0D;
+  --toast-act: #3D46B8; --scrim: rgba(0,0,0,.55);
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.22);
   color-scheme: dark;
 }
+:root[data-theme="light"] { color-scheme: light; }
 
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+:root { padding-top: env(safe-area-inset-top, 0px); }
 body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--f-body);
-  font-size: 15px;
-  line-height: 1.45;
-  padding-inline: 16px;
-  -webkit-tap-highlight-color: transparent;
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--f-body); font-size: 16px; line-height: 1.45;
+  -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none;
 }
 body.locked { overflow: hidden; }
-button { font: inherit; color: inherit; cursor: pointer; }
-button:focus-visible, input:focus-visible, .chip:focus-visible {
-  outline: 2px solid var(--card); outline-offset: 2px;
-}
-.app {
-  max-width: 520px; margin: 0 auto;
-  padding-block: 8px 120px;
-  display: flex; flex-direction: column; gap: 16px;
-}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-user-select: none; user-select: none; }
+input, select { font: inherit; }
+:focus-visible { outline: 2.5px solid var(--card); outline-offset: 2px; }
+[hidden] { display: none !important; }
+img, svg { max-width: 100%; }
 
-/* Header */
-.top {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-  background: var(--bg);
-  padding-block: 10px 6px;
-  display: flex; flex-direction: column; gap: 10px;
+.main {
+  max-width: 560px; margin: 0 auto;
+  padding: 12px 16px calc(124px + env(safe-area-inset-bottom, 0px));
 }
-.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.brand h1 {
-  margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 24px;
-  letter-spacing: -.01em;
-}
-.sync { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-.sync[data-mode="sync"]::before { background: var(--cash); }
-.tabs {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  background: var(--track); border-radius: 12px; padding: 3px; gap: 3px;
-}
-.tabs button {
-  border: 0; background: transparent; border-radius: 9px; padding: 8px 0;
-  font-weight: 600; font-size: 14px; color: var(--muted);
-}
-.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.screen { display: flex; flex-direction: column; gap: 16px; }
 
-/* Summary slip */
-.summary {
-  background: var(--surface); border-radius: 18px; box-shadow: var(--shadow);
-  padding: 16px; display: flex; flex-direction: column; gap: 12px;
-}
-.nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.nav button {
-  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line);
-  background: transparent; font-size: 20px; line-height: 1; display: grid; place-items: center;
-}
-.nav button:disabled { opacity: .35; cursor: default; }
-.nav .pl { text-align: center; min-width: 0; }
-.nav .pl strong { display: block; font-weight: 600; font-size: 15px; }
-.nav .pl span { display: block; font-size: 12px; color: var(--muted); }
-.total {
-  display: flex; align-items: baseline; gap: 8px; justify-content: center;
-  font-family: var(--f-display); font-weight: 700; font-variant-numeric: tabular-nums;
-}
-.total #total { font-size: clamp(38px, 11vw, 52px); letter-spacing: -.02em; line-height: 1.05; }
-.total .unit { font-size: 18px; color: var(--muted); font-weight: 600; }
-.split { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--track); }
-.split span { height: 100%; transition: width .3s ease; }
-.split .s-card { background: var(--card); }
-.split .s-cash { background: var(--cash); }
-.legend { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; flex-wrap: wrap; }
-.legend div { display: flex; align-items: center; gap: 6px; }
-.legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
-.legend b { font-family: var(--f-num); font-weight: 500; font-variant-numeric: tabular-nums; }
-.dot-card { background: var(--card); }
-.dot-cash { background: var(--cash); }
+/* Headings */
+.hello { padding-top: 8px; }
+.eyebrow { margin: 0; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.title { margin: 2px 0 0; font-family: var(--f-display); font-weight: 600; font-size: 30px; line-height: 1.15; text-wrap: balance; }
+.mood { margin: 6px 0 0; color: var(--muted); font-size: 15.5px; font-weight: 600; }
+.sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 0 4px; margin-bottom: -6px; }
+.sec-h h2 { margin: 0; font-size: 17px; font-weight: 800; }
+.sec-h span { font-size: 13px; color: var(--muted); font-weight: 700; }
+
+/* Segmented controls */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--track); border-radius: 15px; padding: 4px; gap: 4px; }
+.seg button { border: 0; background: transparent; border-radius: 11px; padding: 9px 0; font-weight: 800; font-size: 15px; color: var(--muted); }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.seg-sm { padding: 3px; }
+.seg-sm button { padding: 7px 0; font-size: 14px; }
+
+/* Spent card */
+.hero { background: var(--hero); color: var(--on-hero); border-radius: var(--r-lg); padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.pnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pnav button { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 13px; border: 0; background: var(--hero-track); color: var(--on-hero); font-size: 24px; line-height: 1; display: grid; place-items: center; padding: 0 0 3px; }
+.pnav button:disabled { opacity: .3; cursor: default; }
+.pnav .pl { text-align: center; min-width: 0; }
+.pnav .pl strong { display: block; font-weight: 800; font-size: 16.5px; }
+.pnav .pl span { display: block; font-size: 13px; font-weight: 600; color: var(--hero-muted); }
+.pnav.light button { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.pnav.light .pl span { color: var(--muted); }
+.lbl { font-size: 12.5px; font-weight: 800; color: var(--hero-muted); text-transform: uppercase; letter-spacing: .08em; text-align: center; }
+.big { display: flex; justify-content: center; align-items: baseline; gap: 8px; font-family: var(--f-display); font-weight: 600; margin-top: 2px; }
+.big .n { font-size: clamp(42px, 13vw, 58px); line-height: 1.05; letter-spacing: -.01em; }
+.big .u { font-size: 21px; color: var(--hero-muted); }
+.split { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: var(--hero-track); }
+.split span { height: 100%; transition: width .35s ease; }
+.split .c { background: var(--hero-card); }
+.split .k { background: var(--hero-cash); }
+.legend { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 14.5px; font-weight: 600; }
+.legend div { display: flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 4px; display: inline-block; }
+.legend b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.dc { background: var(--hero-card); }
+.dk { background: var(--hero-cash); }
+.inrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--hero-track); padding-top: 12px; }
+.inrow div { display: flex; flex-direction: column; min-width: 0; }
+.inrow span { font-size: 12.5px; color: var(--hero-muted); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.inrow b { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Cards */
+.card { background: var(--surface); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card-h h2 { margin: 0; font-size: 17px; font-weight: 800; }
+.cap { font-size: 13.5px; color: var(--muted); font-weight: 700; }
+.cap b { color: var(--ink); font-weight: 800; }
+.link { border: 0; background: transparent; color: var(--card); font-weight: 800; font-size: 15px; padding: 6px 0; align-self: flex-start; }
 
 /* Budget */
-.budget { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 7px; --b: var(--ink); }
+.budget { --b: var(--ok); }
 .budget[data-state="warn"] { --b: var(--warn); }
 .budget[data-state="over"] { --b: var(--danger); }
-.b-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.b-top span { font-size: 13px; font-weight: 600; }
-.link { border: 0; background: transparent; color: var(--card); font-weight: 600; font-size: 13px; padding: 4px 0; }
-.b-meter { height: 10px; border-radius: 99px; background: var(--track); overflow: hidden; }
-.b-meter span { display: block; height: 100%; background: var(--b); border-radius: 99px; transition: width .3s ease; }
-.b-text { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.b-text strong { color: var(--b); font-weight: 700; }
-.b-text .daily { display: block; }
-.budget[data-state="warn"] .b-top span::after { content: " · nearly used up"; color: var(--warn); }
-.budget[data-state="over"] .b-top span::after { content: " · over budget"; color: var(--danger); }
+.pill { font-size: 12.5px; font-weight: 800; padding: 4px 10px; border-radius: 99px; color: var(--b); background: color-mix(in srgb, var(--b) 15%, transparent); }
+.meter { height: 12px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 99px; background: var(--b); transition: width .35s ease; }
+.btext { margin: 0; font-size: 15px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.btext strong { color: var(--b); font-weight: 800; }
+.btext .daily { display: block; margin-top: 2px; }
 
-/* Export */
-.export-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.outline {
-  border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px;
-  font-weight: 600; font-size: 14px;
-}
-.hint { margin: 8px 0 0; font-size: 12.5px; color: var(--muted); }
-.panel .hint { margin: -4px 0 0; font-size: 14px; }
-
-.chart { border-top: 1px dashed var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 6px; }
-.chart-cap { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.chart-cap b { font-family: var(--f-num); font-weight: 500; color: var(--ink); }
-.bars, .ticks { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--gap, 4px); }
-.bars { height: 84px; align-items: stretch; }
-.bar {
-  display: flex; flex-direction: column-reverse; border-radius: 4px; overflow: hidden;
-  background: var(--track);
-}
+/* Day-by-day bars */
+.bars, .ticks { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: var(--gap, 6px); }
+.bars { height: 100px; align-items: stretch; }
+.bar { border: 0; padding: 0; display: flex; flex-direction: column-reverse; border-radius: 7px; overflow: hidden; background: var(--track); min-width: 0; }
 .bar span { display: block; width: 100%; }
-.bar .b-cash { background: var(--cash); }
-.bar .b-card { background: var(--card); }
-.ticks span { font-size: 11px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; }
-.ticks span.today { color: var(--ink); font-weight: 700; }
+.bar .bk { background: var(--cash); }
+.bar .bc { background: var(--card); }
+.bar.sel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.ticks span { font-size: 11.5px; color: var(--muted); text-align: center; font-weight: 800; white-space: nowrap; }
+.ticks span.today { color: var(--ink); }
 
-/* Categories */
-.section-h {
-  margin: 0 0 8px; font-size: 12px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--muted);
-}
-.cats { display: flex; flex-direction: column; }
-.cat-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
-  padding-block: 7px;
-}
-.cat-row .name { font-weight: 500; }
-.cat-row .amt { font-family: var(--f-num); font-variant-numeric: tabular-nums; font-size: 14px; }
-.cat-row .meter { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
-.cat-row .meter span { display: block; height: 100%; background: var(--ink); opacity: .7; border-radius: 99px; }
+/* Quick add */
+.qrow { display: flex; gap: 10px; overflow-x: auto; padding: 2px 16px 8px; margin: 0 -16px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.qrow::-webkit-scrollbar { display: none; }
+.qchip { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; border: 0; background: var(--surface); border-radius: 16px; padding: 9px 14px 9px 9px; text-align: left; box-shadow: var(--shadow); scroll-snap-align: start; }
+.qchip .qn { display: block; font-weight: 800; font-size: 14.5px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qchip small { display: block; font-weight: 700; color: var(--muted); font-size: 12.5px; }
+.qchip:active, .row:active, .li:active, .sug:active { transform: scale(.985); }
 
-/* Receipt list */
-.list { display: flex; flex-direction: column; gap: 18px; }
-.day { display: flex; flex-direction: column; }
-.day-h {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-  padding-bottom: 6px; border-bottom: 1px solid var(--line);
-}
-.day-h strong { font-weight: 600; }
-.day-h span { font-family: var(--f-num); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
-  width: 100%; text-align: left; background: transparent; border: 0;
-  border-bottom: 1px dashed var(--line); padding: 11px 2px;
-}
-.row:active { background: var(--track); }
-.r-main { min-width: 0; display: flex; flex-direction: column; }
-.r-item { font-weight: 500; overflow-wrap: anywhere; }
-.r-sub { font-size: 12.5px; color: var(--muted); }
-.pay {
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-  padding: 3px 7px; border-radius: 6px; border: 1.5px solid currentColor;
-}
-.pay.card { color: var(--card); }
-.pay.cash { color: var(--cash); }
-.r-amt { font-family: var(--f-num); font-weight: 600; font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+/* Category bits */
+.ico { width: 40px; height: 40px; flex: 0 0 auto; border-radius: 13px; display: grid; place-items: center; font-size: 20px; line-height: 1; background: color-mix(in srgb, var(--c, #64748B) 18%, transparent); }
+.ico.sm { width: 34px; height: 34px; border-radius: 11px; font-size: 18px; }
+.ico.plus { background: var(--track); color: var(--muted); font-weight: 800; font-size: 24px; }
+.ico.xl { width: 72px; height: 72px; border-radius: 22px; font-size: 36px; }
+.crows { display: flex; flex-direction: column; gap: 12px; }
+.crow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; }
+.crow .nm { font-weight: 800; overflow-wrap: anywhere; }
+.crow .nm small { display: block; color: var(--muted); font-size: 12.5px; font-weight: 700; }
+.crow .am { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.crow .mt { grid-column: 2 / -1; height: 6px; border-radius: 99px; background: var(--track); overflow: hidden; margin-top: -2px; }
+.crow .mt span { display: block; height: 100%; border-radius: 99px; background: var(--c); }
 
-.empty {
-  text-align: center; color: var(--muted); padding: 28px 16px;
-  border: 1.5px dashed var(--line); border-radius: 16px;
-}
-.empty strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+/* Lists of entries */
+.days { display: flex; flex-direction: column; gap: 14px; }
+.day { display: flex; flex-direction: column; gap: 6px; }
+.day-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 0 4px; }
+.day-h strong { font-size: 15px; font-weight: 800; }
+.day-h span { font-size: 14px; color: var(--muted); font-weight: 800; font-variant-numeric: tabular-nums; }
+.mh { font-family: var(--f-display); font-size: 20px; font-weight: 600; padding: 8px 4px 0; }
+.rows { background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow); overflow: hidden; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; border: 0; padding: 11px 14px; }
+.row + .row { border-top: 1px solid var(--line); }
+.r-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.r-item { font-weight: 800; overflow-wrap: anywhere; }
+.r-sub { font-size: 13px; color: var(--muted); font-weight: 700; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.r-sub .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-weight: 600; }
+.tag { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; }
+.tag.card { color: var(--card); background: color-mix(in srgb, var(--card) 13%, transparent); }
+.tag.cash { color: var(--cash); background: color-mix(in srgb, var(--cash) 13%, transparent); }
+.rep { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line); }
+.rep.ap { color: var(--card); border-color: color-mix(in srgb, var(--card) 40%, transparent); }
+.stepbox { background: var(--bg); border-radius: var(--r-md); padding: 14px 14px 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.stepbox h3 { margin: 0; font-size: 15px; font-weight: 800; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-weight: 600; font-size: 14.5px; }
+.steps b { color: var(--ink); font-weight: 800; }
+.link.inline { display: inline; padding: 0; font-size: 14.5px; }
+.inp.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; min-height: 0; resize: vertical; background: var(--surface); }
+.r-amt { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.r-amt.in, .val.in { color: var(--in); }
 
-/* Bottom bar */
-.addbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to top, var(--bg) 65%, transparent);
-  display: flex; justify-content: center;
-}
-.primary {
-  width: 100%; max-width: 520px; border: 0; border-radius: 14px; padding: 15px 18px;
-  background: var(--card); color: var(--on-accent); font-weight: 700; font-size: 16px;
-  box-shadow: var(--shadow);
-}
-.primary:active { transform: translateY(1px); }
+.empty { text-align: center; padding: 26px 20px; border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); color: var(--muted); display: flex; flex-direction: column; gap: 6px; align-items: center; font-weight: 600; }
+.empty .art { font-size: 40px; line-height: 1.1; }
+.empty strong { color: var(--ink); font-size: 17px; font-weight: 800; }
 
-/* Sheet */
-.sheet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
-.scrim { position: absolute; inset: 0; background: rgba(8, 14, 11, .45); }
-.panel {
-  position: relative; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto;
-  background: var(--surface); border-radius: 22px 22px 0 0;
-  padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: column; gap: 14px;
-  animation: up .22s ease-out;
-}
-@keyframes up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
-.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.panel-head h2 { margin: 0; font-family: var(--f-display); font-size: 20px; font-weight: 700; }
-.ghost { border: 0; background: transparent; color: var(--muted); font-weight: 600; padding: 8px 4px; }
-.amt-wrap {
-  display: flex; align-items: baseline; gap: 8px; border-bottom: 2px solid var(--line); padding-bottom: 4px;
-}
-.amt-wrap:focus-within { border-bottom-color: var(--card); }
-.amt-wrap input {
-  flex: 1; min-width: 0; border: 0; background: transparent; outline: none; color: var(--ink);
-  font-family: var(--f-display); font-weight: 700; font-size: 44px; font-variant-numeric: tabular-nums; padding: 0;
-}
-.amt-wrap span { font-size: 18px; font-weight: 600; color: var(--muted); }
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field > span, fieldset legend { font-size: 13px; font-weight: 600; color: var(--muted); }
-.field input {
-  font: inherit; font-size: 16px; color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 12px; padding: 12px; width: 100%; min-width: 0;
-}
-fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-fieldset legend { padding: 0; margin-bottom: 8px; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.seg legend { grid-column: 1 / -1; }
-.seg button {
-  border: 1.5px solid var(--line); background: transparent; border-radius: 12px; padding: 12px;
-  font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.seg button[aria-pressed="true"][data-m="card"] { border-color: var(--card); color: var(--card); background: color-mix(in srgb, var(--card) 10%, transparent); }
-.seg button[aria-pressed="true"][data-m="cash"] { border-color: var(--cash); color: var(--cash); background: color-mix(in srgb, var(--cash) 12%, transparent); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip {
-  border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 7px 12px;
-  font-size: 14px; font-weight: 500;
-}
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.err { margin: -6px 0 0; color: var(--danger); font-size: 13px; }
+.install { gap: 8px; }
+.install ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; color: var(--muted); font-weight: 600; }
+.install b { color: var(--ink); }
+
+/* History */
+.hsum { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-weight: 700; font-size: 14px; padding: 0 4px; min-height: 28px; flex-wrap: wrap; }
+.btn-soft { border: 0; background: var(--track); color: var(--ink); border-radius: 15px; padding: 13px 16px; font-weight: 800; font-size: 15.5px; }
+
+/* Stats */
+.donut { position: relative; width: 190px; height: 190px; margin: 4px auto 6px; }
+.donut svg { width: 100%; height: 100%; display: block; }
+.donut .ctr { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 0 30px; }
+.donut .ctr b { font-family: var(--f-display); font-weight: 600; font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
+.donut .ctr span { color: var(--muted); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+.inline-in { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px dashed var(--line); padding-top: 12px; font-weight: 700; color: var(--muted); font-size: 14.5px; }
+.inline-in b { color: var(--ink); font-weight: 800; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 14px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tile > span { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.tile b { font-family: var(--f-display); font-weight: 600; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.tile small { color: var(--muted); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.tile b.up { color: var(--danger); }
+.tile b.down { color: var(--ok); }
+.mbars { position: relative; height: 130px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.mcol { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; min-width: 0; height: 100%; }
+.mcol small { font-size: 11.5px; font-weight: 800; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mcol i { display: block; width: 100%; max-width: 44px; border-radius: 9px 9px 5px 5px; background: color-mix(in srgb, var(--card) 55%, var(--track)); }
+.mcol.cur i { background: var(--card); }
+.mcol.cur small { color: var(--ink); }
+.blimit { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--danger); pointer-events: none; }
+.blimit span { position: absolute; right: 0; top: -19px; font-size: 11px; font-weight: 800; color: var(--danger); background: var(--surface); padding: 0 2px; }
+.mlabels { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 6px; }
+.mlabels span { text-align: center; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.mlabels span.today { color: var(--ink); }
+
+/* Settings */
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group > h2 { margin: 0 4px; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.gnote { margin: -2px 4px 2px; color: var(--muted); font-size: 14px; font-weight: 600; }
+.list { background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow); overflow: hidden; }
+.li { display: flex; align-items: center; gap: 12px; padding: 11px 14px; width: 100%; border: 0; background: transparent; text-align: left; min-height: 54px; font-weight: 800; }
+.li + .li { border-top: 1px solid var(--line); }
+.li .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.li .grow small { display: block; color: var(--muted); font-size: 13px; font-weight: 600; }
+.li .chev { color: var(--muted); font-size: 22px; line-height: 1; }
+.li .val { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.li .seg { width: 200px; flex: 0 0 auto; }
+.li-h { padding: 12px 14px 2px; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+.mini { width: 48%; max-width: 190px; text-align: right; border: 0; background: transparent; font-size: 16px; color: var(--ink); font-weight: 800; padding: 6px 0; outline: 0; }
+.mini::placeholder { color: var(--muted); font-weight: 600; }
+.selmini { position: relative; flex: 0 1 auto; min-width: 0; }
+.selmini select { font-size: 16px; border: 0; background: transparent; color: var(--muted); font-weight: 800; -webkit-appearance: none; appearance: none; padding: 6px 20px 6px 4px; max-width: 190px; text-align: right; text-align-last: right; }
+.selmini::after { content: "▾"; position: absolute; right: 2px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 13px; }
+.danger-li { color: var(--danger); justify-content: center; }
+.foot { text-align: center; color: var(--muted); font-size: 13px; font-weight: 600; margin: 4px 0 0; }
+
+/* Tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-top: 1px solid var(--line); padding: 4px 8px calc(4px + env(safe-area-inset-bottom, 0px)); }
+.tabbar-in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; }
+.tab { border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 4px; color: var(--muted); font-size: 11.5px; font-weight: 800; }
+.tab svg { width: 25px; height: 25px; }
+.tab[aria-current="page"] { color: var(--ink); }
+.fab { justify-self: center; width: 60px; height: 60px; border-radius: 21px; border: 0; background: var(--sun); color: var(--on-sun); display: grid; place-items: center; box-shadow: 0 8px 20px color-mix(in srgb, var(--sun) 45%, transparent); transform: translateY(-16px); margin-bottom: -10px; }
+.fab svg { width: 30px; height: 30px; }
+.fab:active { transform: translateY(-14px) scale(.96); }
+
+/* Sheets */
+.sheet { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+.scrim { position: absolute; inset: 0; background: var(--scrim); animation: fade .2s ease-out; }
+.panel { position: relative; width: 100%; max-width: 560px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border-radius: 26px 26px 0 0; padding: 10px 16px calc(22px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 16px; animation: up .26s cubic-bezier(.2, .8, .2, 1); }
+@keyframes up { from { transform: translateY(48px); } to { transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.grab { width: 42px; height: 5px; border-radius: 99px; background: var(--line); align-self: center; flex: 0 0 auto; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel-h h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 23px; }
+.ghost { border: 0; background: transparent; color: var(--muted); font-weight: 800; padding: 8px 2px; }
+.amt { display: flex; align-items: baseline; gap: 8px; padding: 2px 2px 6px; border-bottom: 2px solid var(--line); }
+.amt:focus-within { border-bottom-color: var(--card); }
+.amt input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font-family: var(--f-display); font-weight: 600; font-size: 46px; padding: 0; }
+.amt input::placeholder { color: var(--line); }
+.amt .u { font-family: var(--f-display); font-size: 21px; color: var(--muted); font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.lab { font-size: 14px; font-weight: 800; color: var(--muted); }
+.lab em { font-style: normal; font-weight: 600; }
+.inp { font-size: 16px; color: var(--ink); background: var(--bg); border: 1.5px solid transparent; border-radius: 14px; padding: 13px 14px; width: 100%; min-width: 0; -webkit-appearance: none; appearance: none; font-weight: 600; min-height: 50px; }
+.inp:focus { border-color: var(--card); outline: 0; }
+.inp::placeholder { color: var(--muted); opacity: .8; }
+.selwrap { position: relative; display: block; }
+.selwrap::after { content: "▾"; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.selwrap select { padding-right: 36px; }
+.pay2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pay2 button { border: 1.5px solid var(--line); background: transparent; border-radius: 15px; padding: 13px; font-weight: 800; font-size: 16px; }
+.pay2 button[aria-pressed="true"][data-m="card"] { border-color: var(--card); color: var(--card); background: color-mix(in srgb, var(--card) 11%, transparent); }
+.pay2 button[aria-pressed="true"][data-m="cash"] { border-color: var(--cash); color: var(--cash); background: color-mix(in srgb, var(--cash) 12%, transparent); }
+.cgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ctile { border: 2px solid transparent; background: var(--bg); border-radius: 15px; padding: 10px 4px 9px; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; color: var(--ink); min-width: 0; line-height: 1.15; }
+.ctile .e { font-size: 23px; line-height: 1; }
+.ctile .t { text-align: center; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.ctile[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface)); }
+.ctile.add { color: var(--muted); }
+.sugs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: -6px; }
+.sug { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 6px 12px 6px 7px; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0; }
+.sug .sn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sug small { color: var(--muted); font-weight: 700; white-space: nowrap; }
+.egrid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.egrid button { aspect-ratio: 1; max-width: 100%; border: 2px solid transparent; background: var(--bg); border-radius: 12px; font-size: 20px; padding: 0; display: grid; place-items: center; }
+.egrid button[aria-pressed="true"] { border-color: var(--ink); }
+.swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.swatches button { aspect-ratio: 1; width: 100%; max-width: 46px; justify-self: center; border-radius: 50%; border: 3px solid var(--surface); box-shadow: 0 0 0 1.5px var(--line); background: var(--sw); padding: 0; }
+.swatches button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--ink); }
+.cprev { display: flex; justify-content: center; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.check input { width: 22px; height: 22px; accent-color: var(--card); }
+.err { margin: -8px 0 0; color: var(--danger); font-size: 14px; font-weight: 700; }
+.hint { margin: 0; color: var(--muted); font-size: 14.5px; font-weight: 600; }
 .actions { display: flex; gap: 10px; }
-.actions .primary { flex: 1; }
-.danger {
-  border: 1.5px solid var(--danger); color: var(--danger); background: transparent;
-  border-radius: 14px; padding: 13px 16px; font-weight: 700;
-}
-.danger.armed { background: var(--danger); color: var(--surface); }
+.primary { flex: 1; border: 0; border-radius: 16px; padding: 15px 18px; background: var(--sun); color: var(--on-sun); font-weight: 800; font-size: 17px; }
+.primary:active { transform: translateY(1px); }
+.danger { border: 1.5px solid var(--danger); color: var(--danger); background: transparent; border-radius: 16px; padding: 13px 16px; font-weight: 800; }
+.danger.armed, .danger.solid { background: var(--danger); color: var(--on-danger); }
 
-.toast {
-  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 30;
-  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
-  background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 12px;
-  font-size: 14px; font-weight: 500; max-width: calc(100vw - 32px); text-align: center;
-  transition: opacity .2s, transform .2s;
-}
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); z-index: 60; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 15px; font-size: 14.5px; font-weight: 700; width: max-content; max-width: calc(100vw - 32px); display: flex; gap: 14px; align-items: center; transition: opacity .2s, transform .2s; box-shadow: var(--shadow); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast button { border: 0; background: transparent; color: var(--toast-act); font-weight: 800; padding: 4px 2px; flex: 0 0 auto; }
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation: none !important; transition: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-
-/* Standalone app shell */
-html { color-scheme: light; -webkit-text-size-adjust: 100%; }
-:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-body { margin: 0; min-height: 100vh; overscroll-behavior-y: none; }
-img { max-width: 100%; }
-[hidden] { display: none !important; }
-.backup-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.backup-btns .wide { grid-column: 1 / -1; }
-.install {
-  background: var(--surface); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow);
-  display: flex; flex-direction: column; gap: 6px; font-size: 14px;
-}
-.install strong { font-family: var(--f-display); font-size: 16px; }
-.install ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 2px; }
-.install .link { align-self: flex-start; }
 </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="brand">
-      <h1>Pocket Ledger</h1>
-      <span id="syncNote" class="sync" data-mode="local">Saved on this phone</span>
-    </div>
-    <div class="tabs" role="tablist" aria-label="Time period">
-      <button type="button" role="tab" id="tab-day" data-p="day">Day</button>
-      <button type="button" role="tab" id="tab-week" data-p="week">Week</button>
-      <button type="button" role="tab" id="tab-month" data-p="month">Month</button>
-    </div>
-  </header>
+<main class="main">
 
-  <div class="install" id="install" hidden>
-    <strong>Put Pocket Ledger on your home screen</strong>
-    <ol>
-      <li>Tap the Share button (in newer iOS, tap <b>•••</b> first, then <b>Share</b>).</li>
-      <li>Scroll down or tap <b>View More</b>, then choose <b>Add to Home Screen</b>.</li>
-      <li>Open it from the new icon. Your expenses are kept inside that app.</li>
-    </ol>
-    <button type="button" class="link" id="installHide">Hide this</button>
+  <!-- Home -->
+  <section class="screen" id="scr-home" aria-label="Home">
+    <header class="hello">
+      <p class="eyebrow" id="dateLine"></p>
+      <h1 class="title" id="greet">Hello!</h1>
+      <p class="mood" id="mood"></p>
+    </header>
+
+    <div class="seg" id="homeSeg" role="tablist" aria-label="Time period">
+      <button type="button" role="tab" id="hp-day" data-p="day">Day</button>
+      <button type="button" role="tab" id="hp-week" data-p="week">Week</button>
+      <button type="button" role="tab" id="hp-month" data-p="month">Month</button>
+    </div>
+
+    <div class="hero">
+      <div class="pnav">
+        <button type="button" id="prev" aria-label="Previous period">‹</button>
+        <div class="pl"><strong id="plabel">Today</strong><span id="psub"></span></div>
+        <button type="button" id="next" aria-label="Next period">›</button>
+      </div>
+      <div>
+        <div class="lbl">Spent</div>
+        <div class="big" id="bigTotal"></div>
+      </div>
+      <div class="split" aria-hidden="true"><span class="c" id="sCard" style="width:0"></span><span class="k" id="sCash" style="width:0"></span></div>
+      <div class="legend">
+        <div><i class="dc"></i>Card <b id="cardAmt"></b></div>
+        <div><i class="dk"></i>Cash <b id="cashAmt"></b></div>
+      </div>
+      <div class="inrow" id="inRow" hidden>
+        <div><span>Money in</span><b id="inAmt"></b></div>
+        <div><span>Balance</span><b id="balAmt"></b></div>
+      </div>
+    </div>
+
+    <div class="card budget" id="budget" data-state="none">
+      <div class="card-h"><h2 id="bLabel">Monthly budget</h2><span class="pill" id="bPill" hidden></span></div>
+      <div class="meter" id="bMeterWrap" hidden><span id="bMeter" style="width:0"></span></div>
+      <p class="btext" id="bText"></p>
+      <button type="button" class="link" id="bEdit">Set a budget</button>
+    </div>
+
+    <div class="card" id="chartCard" hidden>
+      <div class="card-h"><h2>Day by day</h2><span class="cap" id="chartCap"></span></div>
+      <div id="chart"></div>
+    </div>
+
+    <div id="quickWrap" class="screen" hidden>
+      <div class="sec-h"><h2>Quick add</h2><span>Tap to log it again</span></div>
+      <div class="qrow" id="quick"></div>
+    </div>
+
+    <div class="card" id="catsCard" hidden>
+      <div class="card-h"><h2>Where it went</h2></div>
+      <div class="crows" id="cats"></div>
+    </div>
+
+    <div class="sec-h"><h2 id="listH">Purchases</h2></div>
+    <div class="days" id="list"></div>
+
+    <div class="card install" id="install" hidden>
+      <div class="card-h"><h2>Put it on your home screen</h2></div>
+      <ol>
+        <li>Tap <b>Share</b> (on newer iOS, tap <b>•••</b> first).</li>
+        <li>Choose <b>Add to Home Screen</b>, keep <b>Open as Web App</b> on, then tap <b>Add</b>.</li>
+        <li>Always open Pocket Ledger from that icon.</li>
+      </ol>
+      <button type="button" class="link" id="installHide">Hide this</button>
+    </div>
+  </section>
+
+  <!-- History -->
+  <section class="screen" id="scr-history" aria-label="History" hidden>
+    <h1 class="title">History</h1>
+    <input class="inp" type="search" id="hq" placeholder="Search purchases, notes or amounts" autocomplete="off" enterkeyhint="search" aria-label="Search">
+    <div class="seg seg-sm" id="hType" aria-label="Filter">
+      <button type="button" id="ht-all" data-t="all">All</button>
+      <button type="button" id="ht-card" data-t="card">Card</button>
+      <button type="button" id="ht-cash" data-t="cash">Cash</button>
+      <button type="button" id="ht-in" data-t="income">Money in</button>
+    </div>
+    <span class="selwrap"><select class="inp" id="hCat" aria-label="Category"></select></span>
+    <div class="hsum"><span id="hSum"></span><button type="button" class="link" id="hExport">Export these</button></div>
+    <div class="days" id="hList"></div>
+    <button type="button" class="btn-soft" id="hMore" hidden>Show more</button>
+  </section>
+
+  <!-- Stats -->
+  <section class="screen" id="scr-stats" aria-label="Stats" hidden>
+    <h1 class="title">Stats</h1>
+    <div class="seg" id="statsSeg" role="tablist" aria-label="Time period">
+      <button type="button" role="tab" id="sp-week" data-p="week">Week</button>
+      <button type="button" role="tab" id="sp-month" data-p="month">Month</button>
+      <button type="button" role="tab" id="sp-year" data-p="year">Year</button>
+    </div>
+    <div class="pnav light">
+      <button type="button" id="sPrev" aria-label="Previous period">‹</button>
+      <div class="pl"><strong id="sLabel"></strong><span id="sSub"></span></div>
+      <button type="button" id="sNext" aria-label="Next period">›</button>
+    </div>
+    <div class="screen" id="statsBody"></div>
+    <div class="card">
+      <div class="card-h"><h2>Last 6 months</h2><span class="cap" id="mCap"></span></div>
+      <div id="months"></div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section class="screen" id="scr-settings" aria-label="Settings" hidden>
+    <h1 class="title">Settings</h1>
+
+    <div class="group">
+      <h2>You</h2>
+      <div class="list">
+        <label class="li" for="setName"><span class="grow">Your name<small>Shown in the greeting</small></span><input class="mini" id="setName" maxlength="24" placeholder="Optional" autocomplete="given-name"></label>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Money</h2>
+      <div class="list">
+        <label class="li" for="setCur"><span class="grow">Currency<small>Changes the symbol only</small></span><span class="selmini"><select id="setCur"></select></span></label>
+        <button type="button" class="li" id="setBudget"><span class="grow">Monthly budget<small id="setBudgetSub"></small></span><span class="chev">›</span></button>
+        <label class="li" for="setWeek"><span class="grow">Week starts on</span><span class="selmini"><select id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option></select></span></label>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Apple Pay auto-log</h2>
+      <p class="gnote">Payments you make by tapping your iPhone or Apple Watch get logged for you.</p>
+      <div class="list">
+        <button type="button" class="li" id="apOpen"><span class="ico" style="--c:#3B82F6">📲</span><span class="grow"><span id="apTitle">Set up Apple Pay auto-log</span><small id="apSub">About 10 minutes, once</small></span><span class="chev">›</span></button>
+        <button type="button" class="li" id="apCheck" hidden><span class="grow">Check for new payments<small id="apLast"></small></span><span class="chev">›</span></button>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Look</h2>
+      <div class="list">
+        <div class="li"><span class="grow">Theme</span>
+          <div class="seg seg-sm" id="setTheme">
+            <button type="button" id="th-auto" data-v="auto">Auto</button>
+            <button type="button" id="th-light" data-v="light">Light</button>
+            <button type="button" id="th-dark" data-v="dark">Dark</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Categories</h2>
+      <div class="list" id="setCats"></div>
+    </div>
+
+    <div class="group">
+      <h2>Repeating payments</h2>
+      <p class="gnote">Subscriptions, rent or pay day. Each one is added for you on the right day.</p>
+      <div class="list" id="setRules"></div>
+    </div>
+
+    <div class="group">
+      <h2>Backup</h2>
+      <p class="gnote">Your expenses live only on this phone. Save a backup now and then.</p>
+      <div class="list">
+        <button type="button" class="li" id="bkJson"><span class="grow">Save a full backup<small>Everything, including categories and settings</small></span><span class="chev">›</span></button>
+        <button type="button" class="li" id="bkCsv"><span class="grow">Export to a spreadsheet<small>CSV for Numbers, Excel or Google Sheets</small></span><span class="chev">›</span></button>
+        <button type="button" class="li" id="bkImport"><span class="grow">Restore or import a file<small>A Pocket Ledger backup or CSV</small></span><span class="chev">›</span></button>
+      </div>
+      <input type="file" id="impFile" accept=".json,.csv,application/json,text/csv,text/plain" hidden>
+    </div>
+
+    <div class="group">
+      <div class="list"><button type="button" class="li danger-li" id="wipe">Delete all expenses</button></div>
+    </div>
+    <p class="foot">Pocket Ledger · <span id="countLine"></span></p>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <div class="tabbar-in">
+    <button type="button" class="tab" data-tab="home" id="tab-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-4v-6h-6v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg>Home
+    </button>
+    <button type="button" class="tab" data-tab="history" id="tab-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1v16l-2.5-1.5-2.25 1.5L12 19l-2.25 1.5L7.5 19 5 20.5v-16a1 1 0 0 1 1-1z"/><path d="M8.5 8.5h7M8.5 12h7M8.5 15.5h4"/></svg>History
+    </button>
+    <button type="button" class="fab" id="fab" aria-label="Add expense">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+    <button type="button" class="tab" data-tab="stats" id="tab-stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5H12z"/><path d="M15 3.8A8.5 8.5 0 0 1 20.2 9H15z"/></svg>Stats
+    </button>
+    <button type="button" class="tab" data-tab="settings" id="tab-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>Settings
+    </button>
   </div>
+</nav>
 
-  <section class="summary" aria-label="Summary">
-    <div class="nav">
-      <button type="button" id="prev" aria-label="Previous period">‹</button>
-      <div class="pl"><strong id="plabel">Today</strong><span id="psub"></span></div>
-      <button type="button" id="next" aria-label="Next period">›</button>
+<!-- Add / edit entry -->
+<div class="sheet" id="entrySheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="panel" id="entryForm" novalidate role="dialog" aria-modal="true" aria-labelledby="eTitle">
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="eTitle">New expense</h2><button type="button" class="ghost" data-close>Cancel</button></div>
+    <div class="seg" id="eType">
+      <button type="button" id="et-exp" data-t="expense">Expense</button>
+      <button type="button" id="et-in" data-t="income">Money in</button>
     </div>
-    <div class="total"><span id="total">0,00</span><span class="unit">lei</span></div>
-    <div class="split" aria-hidden="true"><span class="s-card" id="sCard" style="width:0"></span><span class="s-cash" id="sCash" style="width:0"></span></div>
-    <div class="legend">
-      <div><i class="dot-card"></i>Card <b id="cardAmt">0,00</b></div>
-      <div><i class="dot-cash"></i>Cash <b id="cashAmt">0,00</b></div>
+    <label class="amt" for="eAmt"><span class="u" id="eUnitPre" hidden></span><input id="eAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Amount"><span class="u" id="eUnit">lei</span></label>
+    <p class="err" id="eAmtErr" hidden>Enter how much it was, for example 12,50.</p>
+    <label class="field" for="eItem"><span class="lab" id="eItemLab">What did you buy?</span><input class="inp" id="eItem" autocomplete="off" maxlength="80" placeholder="e.g. Coffee and a croissant"></label>
+    <p class="err" id="eItemErr" hidden>Write a few words so you'll recognise it later.</p>
+    <div class="sugs" id="eSugs"></div>
+    <div class="field"><span class="lab" id="ePayLab">Paid with</span>
+      <div class="pay2"><button type="button" id="eCard" data-m="card">💳 Card</button><button type="button" id="eCash" data-m="cash">💵 Cash</button></div>
     </div>
-    <div class="budget" id="budget" data-state="none">
-      <div class="b-top"><span id="bLabel">Monthly budget</span><button type="button" class="link" id="bEdit">Set budget</button></div>
-      <div class="b-meter" id="bMeterWrap" hidden><span id="bMeter" style="width:0"></span></div>
-      <div class="b-text" id="bText">Set a monthly limit to see how much you have left.</div>
-    </div>
-    <div class="chart" id="chart" hidden></div>
-  </section>
-
-  <section id="catsWrap" hidden>
-    <h2 class="section-h">By category</h2>
-    <div class="cats" id="cats"></div>
-  </section>
-
-  <section>
-    <h2 class="section-h" id="listH">Purchases</h2>
-    <div class="list" id="list"></div>
-  </section>
-
-  <section>
-    <h2 class="section-h">Back up and export</h2>
-    <div class="backup-btns">
-      <button type="button" class="outline" id="expPeriod">Export this period</button>
-      <button type="button" class="outline" id="expAll">Export everything</button>
-      <button type="button" class="outline wide" id="impBtn">Import from a file</button>
-    </div>
-    <input type="file" id="impFile" accept=".csv,text/csv,text/plain" hidden>
-    <p class="hint">Exports a CSV file that opens in Numbers, Excel or Google Sheets. Your expenses live only on this phone, so export everything now and then as a backup. Import adds expenses from a Pocket Ledger CSV and skips ones you already have.</p>
-  </section>
-</div>
-
-<div class="addbar"><button type="button" class="primary" id="addBtn">+ Add expense</button></div>
-
-<div class="sheet" id="sheet" hidden>
-  <div class="scrim" id="scrim"></div>
-  <form class="panel" id="form" novalidate role="dialog" aria-modal="true" aria-labelledby="formTitle">
-    <div class="panel-head">
-      <h2 id="formTitle">New expense</h2>
-      <button type="button" class="ghost" id="closeBtn">Cancel</button>
-    </div>
-    <label class="amt-wrap" for="amt">
-      <input id="amt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Amount in lei">
-      <span>lei</span>
+    <div class="field"><span class="lab">Category</span><div class="cgrid" id="eCats"></div></div>
+    <label class="field" for="eWhen"><span class="lab">When</span><input class="inp" id="eWhen" type="datetime-local"></label>
+    <label class="field" for="eNote"><span class="lab">Note <em>(optional)</em></span><input class="inp" id="eNote" maxlength="140" placeholder="Anything to remember about it" autocomplete="off"></label>
+    <label class="field" for="eRepeat" id="eRepeatWrap"><span class="lab">Repeat</span>
+      <span class="selwrap"><select class="inp" id="eRepeat"><option value="none">Doesn't repeat</option><option value="week">Every week</option><option value="month">Every month</option></select></span>
     </label>
-    <p class="err" id="amtErr" hidden>Enter how much it cost, for example 12,50.</p>
-    <label class="field" for="item">
-      <span>What did you buy?</span>
-      <input id="item" list="pastItems" autocomplete="off" maxlength="80" placeholder="e.g. Coffee and a croissant">
-    </label>
-    <p class="err" id="itemErr" hidden>Write what you bought so you can recognise it later.</p>
-    <datalist id="pastItems"></datalist>
-    <fieldset class="seg">
-      <legend>Paid with</legend>
-      <button type="button" id="mCard" data-m="card" aria-pressed="true">Card</button>
-      <button type="button" id="mCash" data-m="cash" aria-pressed="false">Cash</button>
-    </fieldset>
-    <fieldset>
-      <legend>Category (optional)</legend>
-      <div class="chips" id="chips"></div>
-    </fieldset>
-    <label class="field" for="when">
-      <span>When</span>
-      <input id="when" type="datetime-local">
-    </label>
-    <div class="actions">
-      <button type="button" class="danger" id="delBtn" hidden>Delete</button>
-      <button type="submit" class="primary" id="saveBtn">Save</button>
-    </div>
+    <p class="hint" id="eRidNote" hidden></p>
+    <div class="actions"><button type="button" class="danger" id="eDel" hidden>Delete</button><button type="submit" class="primary" id="eSave">Save</button></div>
   </form>
 </div>
 
-<div class="sheet" id="bSheet" hidden>
-  <div class="scrim" id="bScrim"></div>
+<!-- Category -->
+<div class="sheet" id="catSheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="panel" id="catForm" novalidate role="dialog" aria-modal="true" aria-labelledby="cTitle">
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="cTitle">New category</h2><button type="button" class="ghost" data-close>Cancel</button></div>
+    <div class="cprev"><span class="ico xl" id="cPrev">🏷️</span></div>
+    <div class="seg" id="cKind">
+      <button type="button" id="ck-exp" data-k="expense">For expenses</button>
+      <button type="button" id="ck-in" data-k="income">For money in</button>
+    </div>
+    <label class="field" for="cName"><span class="lab">Name</span><input class="inp" id="cName" maxlength="24" placeholder="e.g. School, Gym, Coffee" autocomplete="off"></label>
+    <p class="err" id="cErr" hidden>Give the category a name.</p>
+    <div class="field"><span class="lab">Icon</span><div class="egrid" id="cEmojis"></div>
+      <input class="inp" id="cEmoji" maxlength="8" placeholder="Or type any emoji" autocomplete="off" aria-label="Custom emoji">
+    </div>
+    <div class="field"><span class="lab">Colour</span><div class="swatches" id="cColors"></div></div>
+    <div class="actions"><button type="button" class="danger" id="cDel" hidden>Delete</button><button type="submit" class="primary">Save category</button></div>
+  </form>
+</div>
+
+<!-- Repeating payment -->
+<div class="sheet" id="ruleSheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="panel" id="ruleForm" novalidate role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="rTitle">Repeating payment</h2><button type="button" class="ghost" data-close>Cancel</button></div>
+    <div class="seg" id="rType">
+      <button type="button" id="rt-exp" data-t="expense">Expense</button>
+      <button type="button" id="rt-in" data-t="income">Money in</button>
+    </div>
+    <label class="amt" for="rAmt"><span class="u" id="rUnitPre" hidden></span><input id="rAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Amount"><span class="u" id="rUnit">lei</span></label>
+    <p class="err" id="rAmtErr" hidden>Enter the amount, for example 29,99.</p>
+    <label class="field" for="rItem"><span class="lab">Name</span><input class="inp" id="rItem" maxlength="80" placeholder="e.g. Spotify, phone bill, rent" autocomplete="off"></label>
+    <p class="err" id="rItemErr" hidden>Give it a name.</p>
+    <div class="field"><span class="lab" id="rPayLab">Paid with</span>
+      <div class="pay2"><button type="button" id="rCard" data-m="card">💳 Card</button><button type="button" id="rCash" data-m="cash">💵 Cash</button></div>
+    </div>
+    <label class="field" for="rCat"><span class="lab">Category</span><span class="selwrap"><select class="inp" id="rCat"></select></span></label>
+    <label class="field" for="rFreq"><span class="lab">How often</span><span class="selwrap"><select class="inp" id="rFreq"><option value="month">Every month</option><option value="week">Every week</option></select></span></label>
+    <label class="field" for="rNext"><span class="lab">Next payment</span><input class="inp" id="rNext" type="date"></label>
+    <p class="err" id="rNextErr" hidden>Pick the date of the next payment.</p>
+    <label class="check" for="rActive" id="rActiveWrap"><input type="checkbox" id="rActive"> Active (untick to pause it)</label>
+    <p class="hint">Each payment is added automatically on its date. If the date has already passed, it's added right away.</p>
+    <div class="actions"><button type="button" class="danger" id="rDel" hidden>Delete</button><button type="submit" class="primary">Save</button></div>
+  </form>
+</div>
+
+<!-- Budget -->
+<div class="sheet" id="budgetSheet" hidden>
+  <div class="scrim" data-close></div>
   <form class="panel" id="bForm" novalidate role="dialog" aria-modal="true" aria-labelledby="bTitle">
-    <div class="panel-head">
-      <h2 id="bTitle">Monthly budget</h2>
-      <button type="button" class="ghost" id="bClose">Cancel</button>
-    </div>
-    <p class="hint">The most you want to spend each month. You'll get a warning when you reach 80% and when you go over.</p>
-    <label class="amt-wrap" for="bAmt">
-      <input id="bAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Monthly budget in lei">
-      <span>lei</span>
-    </label>
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="bTitle">Monthly budget</h2><button type="button" class="ghost" data-close>Cancel</button></div>
+    <p class="hint">The most you want to spend each month. You'll get a heads-up at 80% and when you go over.</p>
+    <label class="amt" for="bAmt"><span class="u" id="bUnitPre" hidden></span><input id="bAmt" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Monthly budget"><span class="u" id="bUnit">lei</span></label>
     <p class="err" id="bErr" hidden>Enter a budget amount, for example 2000.</p>
-    <div class="actions">
-      <button type="button" class="danger" id="bRemove" hidden>Remove</button>
-      <button type="submit" class="primary">Save budget</button>
-    </div>
+    <div class="actions"><button type="button" class="danger" id="bRemove" hidden>Remove</button><button type="submit" class="primary">Save budget</button></div>
   </form>
 </div>
 
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<!-- Apple Pay auto-log -->
+<div class="sheet" id="apSheet" hidden>
+  <div class="scrim" data-close></div>
+  <form class="panel" id="apForm" novalidate role="dialog" aria-modal="true" aria-labelledby="apTitleH">
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="apTitleH">Apple Pay auto-log</h2><button type="button" class="ghost" data-close>Close</button></div>
+    <p class="hint">When you pay by tapping your iPhone or Watch, a Shortcut sends the amount and shop to a Google Sheet that only you own. Pocket Ledger adds them every time you open it.</p>
+
+    <div class="stepbox">
+      <h3>On your computer</h3>
+      <ol class="steps">
+        <li>Create a new Google Sheet at <b>sheets.new</b>, then open <b>Extensions → Apps Script</b>.</li>
+        <li>Delete the code that's there and paste the Pocket Ledger script. <button type="button" class="link inline" id="apCopy">Copy the script</button></li>
+        <li>Click <b>Deploy → New deployment</b>, choose <b>Web app</b>, set <b>Who has access</b> to <b>Anyone</b>, then click <b>Deploy</b>.</li>
+        <li>Allow access when Google asks. If it says the app isn't verified, click <b>Advanced → Go to … (unsafe)</b>. It's your own script.</li>
+        <li>Copy the <b>Web app URL</b> and send it to your phone.</li>
+      </ol>
+      <textarea class="inp code" id="apScriptBox" rows="8" readonly hidden aria-label="Script"></textarea>
+    </div>
+
+    <label class="field" for="apUrl"><span class="lab">Web app link</span>
+      <input class="inp" id="apUrl" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+    </label>
+    <p class="err" id="apErr" hidden></p>
+    <p class="hint" id="apStatus"></p>
+    <div class="actions"><button type="button" class="danger" id="apOff" hidden>Turn off</button><button type="submit" class="primary">Save and test</button></div>
+
+    <div class="stepbox">
+      <h3>On your iPhone, in Shortcuts</h3>
+      <ol class="steps">
+        <li>Open <b>Automation</b>, tap <b>+</b> and choose <b>Transaction</b> (called <b>Wallet</b> on newer iOS).</li>
+        <li>Pick your cards, keep all categories, choose <b>Run Immediately</b> and turn off <b>Notify When Run</b>. Tap <b>Next</b>, then <b>New Blank Automation</b>.</li>
+        <li>Add the action <b>Get Contents of URL</b> and paste the same Web app link.</li>
+        <li>Tap the arrow on the action. Set <b>Method</b> to <b>POST</b> and <b>Request Body</b> to <b>JSON</b>.</li>
+        <li>Add three <b>Text</b> fields: <b>amount</b>, <b>merchant</b> and <b>card</b>. For each value, pick <b>Shortcut Input</b>, tap it again and choose <b>Amount</b>, <b>Merchant</b> and <b>Card or Pass</b>.</li>
+        <li>Tap <b>Done</b>. Your next Apple Pay payment shows up here with an <b>Apple Pay</b> tag.</li>
+      </ol>
+    </div>
+    <p class="hint">Only taps with Apple Pay are picked up. Paying with the plastic card, online checkouts and bank transfers still need adding by hand. Payments abroad are logged as the amount shown, in your app's currency.</p>
+  </form>
+</div>
+
+<!-- Confirm -->
+<div class="sheet" id="confirmSheet" hidden>
+  <div class="scrim" data-close></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="kTitle">
+    <div class="grab"></div>
+    <div class="panel-h"><h2 id="kTitle"></h2></div>
+    <p class="hint" id="kText"></p>
+    <div class="actions"><button type="button" class="btn-soft" data-close>Cancel</button><button type="button" class="danger solid primary-like" id="kOk" style="flex:1"></button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastAct" hidden></button></div>
 
 <script src="app.js"></script>
 </body>

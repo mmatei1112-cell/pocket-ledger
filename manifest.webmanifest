@@ -1,13 +1,13 @@
 {
   "name": "Pocket Ledger",
   "short_name": "Ledger",
-  "description": "Track what you spend each day, week and month, in lei.",
+  "description": "Track what you spend each day, week and month.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#EBF0EC",
-  "theme_color": "#EBF0EC",
+  "background_color": "#F2F3F9",
+  "theme_color": "#F2F3F9",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
